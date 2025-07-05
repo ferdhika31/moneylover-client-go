@@ -120,6 +120,20 @@ func TestGetUserInfo(t *testing.T) {
 	}
 }
 
+func TestGetUserInfoError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	c := NewClient("tok")
+	if _, err := c.GetUserInfo(); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
 func TestAPIRequestError(t *testing.T) {
 	orig := http.DefaultClient.Transport
 	defer func() { http.DefaultClient.Transport = orig }()
