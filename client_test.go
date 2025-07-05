@@ -70,6 +70,32 @@ func TestGetToken(t *testing.T) {
 	}
 }
 
+func TestGetTokenError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	call := 0
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		call++
+		switch call {
+		case 1:
+			if r.URL.String() != "https://web.moneylover.me/api/user/login-url" {
+				t.Fatalf("unexpected url %s", r.URL)
+			}
+			return newResponse(`{"data":{"request_token":"req","login_url":"https://ml?client=cli"}}`), nil
+		case 2:
+			return newResponse(`{}`), nil
+		default:
+			t.Fatalf("unexpected request %d", call)
+			return nil, nil
+		}
+	})
+
+	if _, err := GetToken("email", "pass"); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
 func TestGetUserInfo(t *testing.T) {
 	orig := http.DefaultClient.Transport
 	defer func() { http.DefaultClient.Transport = orig }()
