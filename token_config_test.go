@@ -2,6 +2,7 @@ package moneylover
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -70,5 +71,71 @@ func TestClearTokenForUserReadError(t *testing.T) {
 	os.Mkdir(p, 0700)
 	if err := ClearTokenForUser("e"); err == nil {
 		t.Fatalf("expected error")
+	}
+}
+
+func TestSaveToken(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	if err := SaveToken("tok"); err != nil {
+		t.Fatalf("SaveToken error: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, ".moneylover-client"))
+	if err != nil {
+		t.Fatalf("read error: %v", err)
+	}
+	var m map[string]string
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("json error: %v", err)
+	}
+	if m["jwtToken"] != "tok" {
+		t.Fatalf("unexpected map %v", m)
+	}
+}
+
+func TestSaveTokenForUser(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	if err := SaveTokenForUser("a", "tok1"); err != nil {
+		t.Fatalf("save 1: %v", err)
+	}
+	if err := SaveTokenForUser("b", "tok2"); err != nil {
+		t.Fatalf("save 2: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, ".moneylover-client"))
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	var m map[string]string
+	if err := json.Unmarshal(data, &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if m["a"] != "tok1" || m["b"] != "tok2" {
+		t.Fatalf("unexpected map %v", m)
+	}
+}
+
+func TestLoadToken(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	os.WriteFile(filepath.Join(dir, ".moneylover-client"), []byte(`{"jwtToken":"t"}`), 0600)
+	tok, err := LoadToken()
+	if err != nil {
+		t.Fatalf("LoadToken error: %v", err)
+	}
+	if tok != "t" {
+		t.Fatalf("unexpected token %s", tok)
+	}
+}
+
+func TestClearToken(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	os.WriteFile(filepath.Join(dir, ".moneylover-client"), []byte(`{"jwtToken":"t"}`), 0600)
+	if err := ClearToken(); err != nil {
+		t.Fatalf("ClearToken error: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".moneylover-client")); !os.IsNotExist(err) {
+		t.Fatalf("file still exists")
 	}
 }
