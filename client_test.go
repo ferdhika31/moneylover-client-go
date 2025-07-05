@@ -131,6 +131,21 @@ func TestAddTransaction(t *testing.T) {
 	}
 }
 
+func TestAddTransactionError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	c := NewClient("tok")
+	p := TransactionParams{WalletID: "w", CategoryID: "c", Amount: "1", Date: time.Now()}
+	if _, err := c.AddTransaction(p); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
 func TestGetWallets(t *testing.T) {
 	orig := http.DefaultClient.Transport
 	defer func() { http.DefaultClient.Transport = orig }()
@@ -155,6 +170,20 @@ func TestGetWallets(t *testing.T) {
 	}
 	if len(wallets) != 1 || wallets[0].ID != "w1" {
 		t.Fatalf("unexpected wallets %+v", wallets)
+	}
+}
+
+func TestGetWalletsError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	c := NewClient("tok")
+	if _, err := c.GetWallets(); err == nil {
+		t.Fatalf("expected error")
 	}
 }
 
@@ -186,6 +215,20 @@ func TestGetCategories(t *testing.T) {
 	}
 }
 
+func TestGetCategoriesError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	c := NewClient("tok")
+	if _, err := c.GetCategories("w1"); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
 func TestGetTransactions(t *testing.T) {
 	orig := http.DefaultClient.Transport
 	defer func() { http.DefaultClient.Transport = orig }()
@@ -213,5 +256,19 @@ func TestGetTransactions(t *testing.T) {
 	}
 	if len(res.Transactions) != 1 || res.Transactions[0].ID != "tx1" {
 		t.Fatalf("unexpected transactions %+v", res)
+	}
+}
+
+func TestGetTransactionsError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	c := NewClient("tok")
+	if _, err := c.GetTransactions("w1", "2020-01-01", "2020-01-02"); err == nil {
+		t.Fatalf("expected error")
 	}
 }

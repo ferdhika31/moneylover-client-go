@@ -57,3 +57,34 @@ func TestLoginAndIncomeExpense(t *testing.T) {
 		t.Fatalf("expense failed")
 	}
 }
+
+func TestLoginError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	if _, err := Login("e@mail", "pass"); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
+func TestIncomeExpenseError(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		return newResponse(`{"error":1,"msg":"bad"}`), nil
+	})
+
+	c := NewClient("tok")
+	p := TransactionParams{WalletID: "w", CategoryID: "c", Amount: "1", Date: time.Now()}
+	if _, err := c.Income(p); err == nil {
+		t.Fatalf("expected error")
+	}
+	if _, err := c.Expense(p); err == nil {
+		t.Fatalf("expected error")
+	}
+}
