@@ -54,11 +54,12 @@ go run .
 
 ### Session handling
 
-`Login` saves the JWT token to `~/.moneylover-client`. Load it on the next run
-with `LoadToken` and only log in again when the saved session is invalid:
+`Login` saves the JWT token to `~/.moneylover-client` keyed by your email
+address. Load it on the next run with `LoadTokenForUser("email")` and only log
+in again when the saved session is invalid:
 
 ```go
-token, err := ml.LoadToken()
+token, err := ml.LoadTokenForUser("tamvan@dika.web.id")
 var client *ml.Client
 if err == nil && token != "" {
     client = ml.NewClient(token)
@@ -69,6 +70,10 @@ if err == nil && token != "" {
     client, err = ml.Login("tamvan@dika.web.id", "password")
 }
 ```
+
+Use `SaveTokenForUser(email, token)` to store sessions for additional accounts
+and `LoadTokenForUser(email)` to restore them later. Call `TokenExpired(token)`
+to check whether a stored JWT is still valid before hitting the API.
 
 ### ID placeholders
 
