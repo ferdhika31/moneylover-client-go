@@ -403,3 +403,12 @@ The error format may contain messages like `sync_error_data_invalid_format` or `
     "action": "transaction_create"
 }
 ```
+
+## Contributing
+
+- Fork the repository.
+- Create a new branch for your feature or bugfix.
+- Commit your changes and push them to your fork.
+- Create a Pull Request describing your changes.
+
+We appreciate all contributions, whether they are documentation improvements, bug fixes, or new features!
