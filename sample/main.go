@@ -9,16 +9,20 @@ import (
 )
 
 func main() {
-	// try to load a saved session
-	token, err := moneylover.LoadToken()
+	// try to load a saved session for a specific email
+	token, err := moneylover.LoadTokenForUser("email@example.com")
 	var client *moneylover.Client
 	if err == nil && token != "" {
-		client = moneylover.NewClient(token)
-		if _, err = client.GetUserInfo(); err == nil {
-			fmt.Println("loaded existing session")
+		if expired, _ := moneylover.TokenExpired(token); !expired {
+			client = moneylover.NewClient(token)
+			if _, err = client.GetUserInfo(); err == nil {
+				fmt.Println("loaded existing session")
+			} else {
+				fmt.Println("stored session invalid, logging in again")
+				client = nil
+			}
 		} else {
 			fmt.Println("stored session expired, logging in again")
-			client = nil
 		}
 	}
 	if client == nil {

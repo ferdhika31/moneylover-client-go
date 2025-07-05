@@ -6,7 +6,7 @@ func Login(email, password string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := SaveToken(token); err != nil {
+	if err := SaveTokenForUser(email, token); err != nil {
 		return nil, err
 	}
 	return NewClient(token), nil
