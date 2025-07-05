@@ -1,9 +1,11 @@
 package moneylover
 
 import (
-	"net/http"
-	"testing"
-	"time"
+    "net/http"
+    "os"
+    "path/filepath"
+    "testing"
+    "time"
 )
 
 func TestLoginAndIncomeExpense(t *testing.T) {
@@ -66,9 +68,26 @@ func TestLoginError(t *testing.T) {
 		return newResponse(`{"error":1,"msg":"bad"}`), nil
 	})
 
-	if _, err := Login("e@mail", "pass"); err == nil {
-		t.Fatalf("expected error")
-	}
+        if _, err := Login("e@mail", "pass"); err == nil {
+                t.Fatalf("expected error")
+        }
+}
+
+func TestLoginSaveError(t *testing.T) {
+        orig := http.DefaultClient.Transport
+        defer func() { http.DefaultClient.Transport = orig }()
+
+        http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+                return newResponse(`{"data":{"request_token":"req","login_url":"https://ml?client=cli"}}`), nil
+        })
+
+        tmp := t.TempDir()
+        t.Setenv("HOME", tmp)
+        os.Mkdir(filepath.Join(tmp, ".moneylover-client"), 0700)
+
+        if _, err := Login("e@mail", "pass"); err == nil {
+                t.Fatalf("expected error")
+        }
 }
 
 func TestIncomeExpenseError(t *testing.T) {
