@@ -2,6 +2,7 @@ package moneylover
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -127,5 +128,90 @@ func TestAddTransaction(t *testing.T) {
 	}
 	if res.ID != "tx1" {
 		t.Errorf("expected tx1, got %s", res.ID)
+	}
+}
+
+func TestGetWallets(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.String() != "https://web.moneylover.me/api/wallet/list" {
+			t.Fatalf("unexpected url %s", r.URL)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("wrong method %s", r.Method)
+		}
+		if r.Header.Get("Authorization") != "AuthJWT tok" {
+			t.Fatalf("wrong auth header")
+		}
+		return newResponse(`{"error":0,"data":[{"_id":"w1","name":"Wallet"}]}`), nil
+	})
+
+	c := NewClient("tok")
+	wallets, err := c.GetWallets()
+	if err != nil {
+		t.Fatalf("GetWallets error: %v", err)
+	}
+	if len(wallets) != 1 || wallets[0].ID != "w1" {
+		t.Fatalf("unexpected wallets %+v", wallets)
+	}
+}
+
+func TestGetCategories(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.String() != "https://web.moneylover.me/api/category/list" {
+			t.Fatalf("unexpected url %s", r.URL)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/x-www-form-urlencoded" {
+			t.Fatalf("wrong content type %s", ct)
+		}
+		body, _ := ioutil.ReadAll(r.Body)
+		if string(body) != "walletId=w1" {
+			t.Fatalf("unexpected body %s", body)
+		}
+		return newResponse(`{"error":0,"data":[{"_id":"c1","name":"Cat"}]}`), nil
+	})
+
+	c := NewClient("tok")
+	cats, err := c.GetCategories("w1")
+	if err != nil {
+		t.Fatalf("GetCategories error: %v", err)
+	}
+	if len(cats) != 1 || cats[0].ID != "c1" {
+		t.Fatalf("unexpected categories %+v", cats)
+	}
+}
+
+func TestGetTransactions(t *testing.T) {
+	orig := http.DefaultClient.Transport
+	defer func() { http.DefaultClient.Transport = orig }()
+
+	http.DefaultClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.String() != "https://web.moneylover.me/api/transaction/list" {
+			t.Fatalf("unexpected url %s", r.URL)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+			t.Fatalf("wrong content type %s", ct)
+		}
+		var m map[string]string
+		data, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(data, &m)
+		if m["walletId"] != "w1" || m["startDate"] != "2020-01-01" || m["endDate"] != "2020-01-02" {
+			t.Fatalf("unexpected body %s", data)
+		}
+		return newResponse(`{"error":0,"data":{"daterange":{"startDate":"2020-01-01","endDate":"2020-01-02"},"transactions":[{"_id":"tx1"}]}}`), nil
+	})
+
+	c := NewClient("tok")
+	res, err := c.GetTransactions("w1", "2020-01-01", "2020-01-02")
+	if err != nil {
+		t.Fatalf("GetTransactions error: %v", err)
+	}
+	if len(res.Transactions) != 1 || res.Transactions[0].ID != "tx1" {
+		t.Fatalf("unexpected transactions %+v", res)
 	}
 }
