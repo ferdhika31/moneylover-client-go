@@ -379,7 +379,7 @@ A successful call to add a transaction returns the created data:
         "account": "<walletID>",
         "category": "<categoryID>",
         "amount": 400000,
-        "note": "Ama gendit",
+        "note": "Ama gendut",
         "displayDate": "2025-07-05",
         "tokenDevice": "web"
     }
